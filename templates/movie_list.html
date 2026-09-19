@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ country|upper }} — {% endblock %}
+
+{% block content %}
+  <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4 mb-5">
+    {% for movie in movies %}
+      <div class="col">
+        <div class="h-100 d-flex flex-column rounded border shadow-sm p-3" style="max-width: 510px; margin: 0 auto;">
+          {% if movie.image %}
+            <img src="{{ movie.image }}" class="img-fluid rounded mb-3" alt="{{ movie.title }}" style="width: 100%; height: auto; display: block; object-fit: cover;">
+          {% endif %}
+
+          <div class="d-flex justify-content-between align-items-start gap-3">
+            <div>
+              <h5 class="mb-2">{{ movie.rank }}. {{ movie.title }} ({{ movie.year }})</h5>
+            </div>
+          </div>
+
+          <p class="mb-3 text-body-secondary">{{ movie.synopsis or 'No synopsis available.' }}</p>
+
+          <div class="mt-auto pt-2">
+            <div class="d-flex gap-1">
+              {% if movie.services.netflix %}
+                <span class="badge bg-danger" title="Netflix">Netflix</span>
+              {% endif %}
+              {% if movie.services.hbo %}
+                <span class="badge bg-primary" title="HBO">HBO</span>
+              {% endif %}
+              {% if movie.services.prime %}
+                <span class="badge bg-primary" title="Prime">Prime</span>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+
+  {% if total_pages > 1 %}
+    <nav aria-label="Movie pagination">
+      <ul class="pagination justify-content-center flex-wrap">
+        {% if page > 1 %}
+          <li class="page-item">
+            <a class="page-link" href="/{{ country }}?page={{ page - 1 }}">Previous</a>
+          </li>
+        {% else %}
+          <li class="page-item disabled"><span class="page-link">Previous</span></li>
+        {% endif %}
+
+        {% for p in nearby_pages %}
+          <li class="page-item {% if p == page %}active{% endif %}">
+            <a class="page-link" href="/{{ country }}?page={{ p }}">{{ p }}</a>
+          </li>
+        {% endfor %}
+
+        {% if page < total_pages %}
+          <li class="page-item">
+            <a class="page-link" href="/{{ country }}?page={{ page + 1 }}">Next</a>
+          </li>
+        {% else %}
+          <li class="page-item disabled"><span class="page-link">Next</span></li>
+        {% endif %}
+      </ul>
+    </nav>
+  {% endif %}
+{% endblock %}
