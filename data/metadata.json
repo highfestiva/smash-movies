@@ -1,4 +1,10 @@
 {
-    "countries": ["se", "dk"],
-    "services": ["netflix", "hbo", "prime"]
+  "countries": ["se", "dk"],
+  "services": {
+    "Netflix": "netflix",
+    "HBO": "hbo",
+    "Amazon Prime": "prime",
+    "Apple TV": "apple",
+    "Disney": "disney"
+  }
 }

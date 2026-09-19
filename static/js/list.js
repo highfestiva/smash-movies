@@ -1,15 +1,35 @@
 const app = document.getElementById('app');
 const country = new URLSearchParams(window.location.search).get('country') || 'se';
-const defaultServiceNames = ['netflix', 'hbo', 'prime'];
-let serviceNames = [...defaultServiceNames];
-const serviceLabels = { netflix: 'Netflix', hbo: 'HBO', prime: 'Prime' };
-const serviceStyles = {
-  netflix: { className: 'service-netflix', color: '#dc3545' },
-  hbo: { className: 'service-hbo', color: '#0d6efd' },
-  prime: { className: 'service-prime', color: '#ffc107' },
-};
+let serviceNames = [];
+let serviceLabels = {};
 const selectedServices = new Set();
 let allMovies = [];
+
+function normalizeServiceMetadata(meta) {
+  const rawServices = meta && meta.services;
+  if (!rawServices) {
+    serviceNames = [];
+    serviceLabels = {};
+    return;
+  }
+
+  const entries = Array.isArray(rawServices)
+    ? rawServices.map(service => [String(service), String(service)])
+    : Object.entries(rawServices).map(([label, code]) => [String(label).trim(), String(code).trim()]);
+
+  const normalized = entries
+    .map(([label, code]) => [String(code).trim().toLowerCase(), String(label).trim()])
+    .filter(([code, label]) => code && label);
+
+  if (!normalized.length) {
+    serviceNames = [];
+    serviceLabels = {};
+    return;
+  }
+
+  serviceNames = [...new Set(normalized.map(([code]) => code))];
+  serviceLabels = Object.fromEntries(normalized.map(([code, label]) => [code, label]));
+}
 
 function readSelectedServicesFromUrl() {
   const params = new URLSearchParams(window.location.search);
@@ -22,7 +42,7 @@ function readSelectedServicesFromUrl() {
   return serviceValues
     .flatMap(value => value.split(','))
     .map(value => value.trim().toLowerCase())
-    .filter(value => serviceStyles[value] || defaultServiceNames.includes(value));
+    .filter(value => serviceNames.includes(value));
 }
 
 function syncSelectedServicesWithUrl() {
@@ -59,11 +79,61 @@ function getPreferredMovieDetails(movie) {
   };
 }
 
+function mergeMovieRecord(baseMovie, localMovie) {
+  const merged = {
+    ...(baseMovie || {}),
+    ...(localMovie || {}),
+  };
+
+  merged.title = localMovie?.title || baseMovie?.title || merged.title;
+  merged.synopsis = localMovie?.synopsis || baseMovie?.synopsis || merged.synopsis;
+  merged.image = localMovie?.image || baseMovie?.image || merged.image;
+  merged.year = localMovie?.year || baseMovie?.year || merged.year;
+  merged.rank = localMovie?.rank ?? baseMovie?.rank ?? merged.rank;
+  merged.streams_on = localMovie?.streams_on || baseMovie?.streams_on || [];
+
+  return merged;
+}
+
+function hydrateMovieServices(movie) {
+  const services = {};
+
+  for (const service of movie.streams_on || []) {
+    if (serviceNames.includes(service)) {
+      services[service] = {
+        title: movie.title,
+        synopsis: movie.synopsis,
+      };
+    }
+  }
+
+  return {
+    ...movie,
+    services,
+  };
+}
+
+function buildAllMovies(countryMovies, rottenMovies) {
+  const rottenByRank = new Map((rottenMovies || []).map(movie => [movie.rank, movie]));
+  const localByRank = new Map((countryMovies || []).map(movie => [movie.rank, movie]));
+
+  const merged = (rottenMovies || []).map(movie => {
+    const localMovie = localByRank.get(movie.rank);
+    return hydrateMovieServices(mergeMovieRecord(movie, localMovie));
+  });
+
+  const extraLocalMovies = (countryMovies || [])
+    .filter(movie => !rottenByRank.has(movie.rank))
+    .map(movie => hydrateMovieServices(mergeMovieRecord(null, movie)));
+
+  return [...merged, ...extraLocalMovies];
+}
+
 function renderServiceFilters() {
   const controls = serviceNames.map(service => `
     <button
       type="button"
-      class="service-filter-btn ${serviceStyles[service].className} ${selectedServices.has(service) ? 'active' : ''}"
+      class="service-filter-btn service-${service} ${selectedServices.has(service) ? 'active' : ''}"
       data-service="${service}"
       aria-pressed="${selectedServices.has(service) ? 'true' : 'false'}"
     >
@@ -98,10 +168,9 @@ function renderMovies(items) {
     const preferred = getPreferredMovieDetails(movie);
     const title = preferred.title || movie.title;
     const synopsis = preferred.synopsis || movie.synopsis || 'No synopsis available.';
-    const badges = [];
-    if (movie.services && movie.services.netflix) badges.push('<span class="badge bg-danger">Netflix</span>');
-    if (movie.services && movie.services.hbo) badges.push('<span class="badge bg-primary">HBO</span>');
-    if (movie.services && movie.services.prime) badges.push('<span class="badge bg-warning text-dark">Prime</span>');
+    const badges = (movie.services ? Object.keys(movie.services) : [])
+      .filter(service => serviceNames.includes(service))
+      .map(service => `<span class="badge service-badge service-${service}">${serviceLabels[service] || service}</span>`);
 
     return `
       <div class="col-md-4 mb-4">
@@ -175,31 +244,17 @@ if (initialServices.length) {
 fetch('./data/metadata.json')
   .then(r => r.json())
   .then(meta => {
-    if (Array.isArray(meta.services) && meta.services.length) {
-      serviceNames = meta.services.filter(service => serviceStyles[service] || defaultServiceNames.includes(service));
-    }
-    return fetch('./data/rotten_300.json');
+    normalizeServiceMetadata(meta);
+
+    return Promise.all([
+      fetch(`./data/${country}/movies.json`).then(r => (r.ok ? r.json() : [])),
+      fetch('./data/rotten_300.json').then(r => (r.ok ? r.json() : [])),
+    ]);
   })
-  .then(r => r.json())
-  .then(rottenMovies => {
-    allMovies = rottenMovies.map(movie => ({ ...movie, services: {} }));
-
-    const promises = serviceNames.map(service =>
-      fetch(`./data/${country}/${service}.json`)
-        .then(res => (res.ok ? res.json() : []))
-        .then(serviceMovies => {
-          serviceMovies.forEach(serviceMovie => {
-            const match = allMovies.find(m => m.rank === serviceMovie.rank);
-            if (match) match.services[service] = serviceMovie;
-          });
-        })
-        .catch(() => {})
-    );
-
-    Promise.all(promises).then(() => {
-      const filteredMovies = getFilteredMovies(allMovies);
-      renderMovies(filteredMovies);
-    });
+  .then(([countryMovies, rottenMovies]) => {
+    allMovies = buildAllMovies(countryMovies, rottenMovies);
+    const filteredMovies = getFilteredMovies(allMovies);
+    renderMovies(filteredMovies);
   })
   .catch(() => {
     app.innerHTML = '<div class="alert alert-danger">Could not load country data.</div>';

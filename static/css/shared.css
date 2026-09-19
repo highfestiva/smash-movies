@@ -321,6 +321,18 @@ body {
   box-shadow: 0 10px 20px rgba(15, 23, 42, 0.15);
 }
 
+.service-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
 .service-netflix {
   background: rgba(220, 53, 69, 0.18);
   border-color: rgba(220, 53, 69, 0.6);
@@ -351,6 +363,30 @@ body {
   background: linear-gradient(135deg, #f4b400, #facc15);
   border-color: transparent;
   color: #3f2c00;
+}
+
+.service-apple {
+  background: rgba(139, 92, 246, 0.18);
+  border-color: rgba(139, 92, 246, 0.6);
+  color: rgba(55, 35, 90, 0.85);
+}
+
+.service-apple.active {
+  background: linear-gradient(135deg, #8b5cf6, #a78bfa);
+  border-color: transparent;
+  color: #ffffff;
+}
+
+.service-disney {
+  background: rgba(37, 99, 235, 0.16);
+  border-color: rgba(37, 99, 235, 0.6);
+  color: rgba(19, 40, 94, 0.82);
+}
+
+.service-disney.active {
+  background: linear-gradient(135deg, #2563eb, #60a5fa);
+  border-color: transparent;
+  color: #ffffff;
 }
 
 .poster-shell {

@@ -60,5 +60,6 @@ class Rotten300Tests(unittest.TestCase):
                 self.assertEqual(fh.read(), b"existing")
 
 
+
 if __name__ == "__main__":
     unittest.main()

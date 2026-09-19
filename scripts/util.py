@@ -48,7 +48,7 @@ def _is_server_error(resp: requests.Response) -> bool:
     return 500 <= resp.status_code < 600
 
 
-def init_headers(sess, user_agent='curl/8.2.1', accept='*/*'):
+def init_headers(sess, user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36', accept='*/*'):
     sess.headers.update({
         "User-Agent": user_agent,
         "Accept": accept,
