@@ -59,6 +59,15 @@ function syncSelectedServicesWithUrl() {
   window.history.replaceState({}, '', nextUrl);
 }
 
+function getImageAssetUrl(imagePath) {
+  if (!imagePath) {
+    return '';
+  }
+
+  const normalizedPath = imagePath.startsWith('/') ? `.${imagePath}` : imagePath;
+  return new URL(normalizedPath, window.location.href).toString();
+}
+
 function getPreferredMovieDetails(movie) {
   const serviceEntries = serviceNames
     .filter(service => movie.services && movie.services[service])
@@ -168,6 +177,7 @@ function renderMovies(items) {
     const preferred = getPreferredMovieDetails(movie);
     const title = preferred.title || movie.title;
     const synopsis = preferred.synopsis || movie.synopsis || 'No synopsis available.';
+    const imageUrl = getImageAssetUrl(movie.image);
     const badges = (movie.services ? Object.keys(movie.services) : [])
       .filter(service => serviceNames.includes(service))
       .map(service => `<span class="badge service-badge service-${service}">${serviceLabels[service] || service}</span>`);
@@ -175,9 +185,9 @@ function renderMovies(items) {
     return `
       <div class="col-md-4 mb-4">
         <div class="card movie-card h-100 shadow-sm">
-          ${movie.image ? `
-            <div class="poster-shell" style="--poster-bg: url('${movie.image}');">
-              <img class="poster-image" src="${movie.image}" alt="${title}">
+          ${imageUrl ? `
+            <div class="poster-shell" style="--poster-bg: url('${imageUrl}');">
+              <img class="poster-image" src="${imageUrl}" alt="${title}">
             </div>
           ` : '<div class="poster-shell"></div>'}
           <div class="card-body d-flex flex-column">
@@ -205,7 +215,7 @@ function renderMovies(items) {
     <div class="list-shell">
       <div class="hero-panel list-hero">
         <div class="list-top-row">
-          <a href="./" class="list-title-group" aria-label="Go back to country selection" style="cursor: pointer; text-decoration: none; color: inherit;">
+          <a href="./index.html" class="list-title-group" aria-label="Go back to country selection" style="cursor: pointer; text-decoration: none; color: inherit;">
             <span class="list-kicker">Streaming catalogue</span>
             <h1>${country.toUpperCase()}</h1>
           </a>
