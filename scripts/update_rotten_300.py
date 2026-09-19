@@ -16,7 +16,7 @@ scrape_url = "https://editorial.rottentomatoes.com/guide/best-movies-of-all-time
 
 base = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 out = os.path.join(base, "data", "rotten_300.json")
-image_root = os.path.join(base, "data", "rotten_300", "img")
+image_root = os.path.join(base, "data", "img")
 
 
 def slugify_title(title: str) -> str:
@@ -138,7 +138,7 @@ def scrape_rotten_300(url: str = scrape_url, limit: int = 300):
         if image_url:
             slug = slugify_title(title)
             ext = _image_extension(image_url)
-            path_image = f"/movimg/{slug}{ext}"
+            path_image = f"/data/img/{slug}{ext}"
 
         item = {
             "rank": rank,

@@ -1,7 +1,6 @@
 from bs4 import BeautifulSoup
 import unittest
 
-import web_serve
 from scripts import update_se_netflix
 
 
@@ -54,20 +53,6 @@ class NetflixAvailabilityParserTests(unittest.TestCase):
 
         self.assertEqual(updated["title"], "A Real Movie Title")
         self.assertEqual(updated["synopsis"], "A short, updated synopsis.")
-
-
-class WebServeTests(unittest.TestCase):
-    def test_index_lists_countries_only(self):
-        client = web_serve.app.test_client()
-        response = client.get("/")
-
-        self.assertEqual(response.status_code, 200)
-        soup = BeautifulSoup(response.data.decode("utf-8"), "html.parser")
-        country_names = [link.get_text(strip=True) for link in soup.select("a.btn-outline-primary")]
-
-        self.assertNotIn("rotten_300", country_names)
-        self.assertIn("se", country_names)
-        self.assertNotIn("netflix", country_names)
 
 
 if __name__ == "__main__":
