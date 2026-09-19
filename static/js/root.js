@@ -53,7 +53,7 @@ function renderCountries(countries) {
 
 fetch('./data/metadata.json')
   .then(r => r.json())
-  .then(meta => renderCountries(meta.countries || []))
+  .then(meta => renderCountries(Object.keys(meta.countries || {})))
   .catch(() => {
     app.innerHTML = '<div class="alert alert-warning">No country metadata available right now.</div>';
   });

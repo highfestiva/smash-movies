@@ -1,5 +1,8 @@
 {
-  "countries": ["se", "dk"],
+  "countries": {
+    "se": "sv-SE",
+    "dk": "da-DK"
+  },
   "services": {
     "Netflix": "netflix",
     "HBO": "hbo",

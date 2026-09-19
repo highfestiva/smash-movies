@@ -6,3 +6,5 @@ instance/
 env/
 data/**/*.jpg
 data/**/*.png
+data/rotten*.json
+data/*/movies.json

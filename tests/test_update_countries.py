@@ -1,3 +1,4 @@
+import json
 import sys
 import unittest
 from unittest import mock
@@ -45,7 +46,7 @@ class CountriesUpdaterTests(unittest.TestCase):
             "image": "image.jpg",
         }]
 
-        with mock.patch.object(update_countries, "load_metadata", return_value={"countries": ["se"], "services": {"Netflix": "netflix", "HBO": "hbo"}}), \
+        with mock.patch.object(update_countries, "load_metadata", return_value={"countries": {"se": "sv-SE"}, "services": {"Netflix": "netflix", "HBO": "hbo"}}), \
              mock.patch("builtins.open", mock.mock_open(read_data="")), \
              mock.patch.object(update_countries, "fetch_search_page", return_value="<html>search</html>"), \
              mock.patch.object(update_countries, "fetch_movie_page", return_value="<html><div class='title'><a>Example Movie</a></div><div class='overview'>A nice synopsis.</div><a title='Available on Netflix'>Netflix</a></html>"), \
@@ -62,6 +63,45 @@ class CountriesUpdaterTests(unittest.TestCase):
     def test_iter_service_aliases_maps_long_names_to_short_tags(self):
         aliases = list(update_countries.iter_service_aliases({"Netflix": "netflix", "HBO": "hbo"}))
         self.assertEqual(aliases, [("netflix", "netflix"), ("hbo", "hbo")])
+
+    def test_write_country_movies_file_sorts_by_rank(self):
+        with mock.patch("builtins.open", mock.mock_open()) as open_mock:
+            update_countries.write_country_movies_file("se", [
+                {"rank": 2, "title": "Second"},
+                {"rank": 1, "title": "First"},
+            ])
+
+        handle = open_mock()
+        written = "".join(call.args[0] for call in handle.write.call_args_list)
+        data = json.loads(written)
+        self.assertEqual([item["rank"] for item in data], [1, 2])
+
+    def test_scrape_movies_skips_existing_rank_with_same_en_title(self):
+        rotten_movies = [{
+            "rank": 1,
+            "title": "Example Movie",
+            "year": 2024,
+            "image": "image.jpg",
+        }]
+        existing_movies = [{
+            "rank": 1,
+            "title": "Exempel Film",
+            "en_title": "Example Movie",
+            "streams_on": ["netflix"],
+        }]
+
+        with mock.patch.object(update_countries, "load_metadata", return_value={"countries": {"se": "sv-SE"}, "services": {"Netflix": "netflix"}}), \
+             mock.patch("builtins.open", mock.mock_open(read_data="")), \
+             mock.patch.object(update_countries, "fetch_search_page") as fetch_search_mock, \
+             mock.patch.object(update_countries, "fetch_movie_page") as fetch_movie_mock, \
+             mock.patch.object(update_countries, "write_country_movies_file") as write_mock, \
+             mock.patch("json.load", side_effect=[rotten_movies, existing_movies]):
+            result = update_countries.scrape_movies(start_index=0, end_index=0)
+
+        self.assertEqual(result["se"], existing_movies)
+        fetch_search_mock.assert_not_called()
+        fetch_movie_mock.assert_not_called()
+        write_mock.assert_called_once_with("se", existing_movies)
 
     def test_parse_args_reads_indexes(self):
         with mock.patch.object(sys, "argv", ["update_countries.py", "--start-index", "4", "--end-index", "7"]):

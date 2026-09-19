@@ -25,11 +25,9 @@ def load_metadata(path: str = metadata_path):
 
 
 def get_country_language(country: str) -> str | None:
-    mapping = {
-        "se": "sv-SE",
-        "dk": "da-DK",
-    }
-    return mapping[country]
+    metadata = load_metadata()
+    countries = metadata.get("countries", {})
+    return countries.get(country)
 
 
 def extract_movie_title(page_html: str) -> str | None:
@@ -129,7 +127,7 @@ def fetch_search_page(title: str, lang: str, session: requests.Session | None = 
     return resp.text
 
 
-def fetch_movie_page(search_page_html: str, session: requests.Session | None = None) -> str | None:
+def fetch_movie_page(search_page_html: str, lang: str = "en-US", session: requests.Session | None = None) -> str | None:
     if not search_page_html:
         return None
 
@@ -150,7 +148,7 @@ def fetch_movie_page(search_page_html: str, session: requests.Session | None = N
         sess = session or requests.Session()
         sess.headers.update({
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-            "Accept-Language": "sv-SE,sv;q=0.9,en-US;q=0.8,en;q=0.7",
+            "Accept-Language": f"{lang},en-US;q=0.8,en;q=0.7",
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
             "Upgrade-Insecure-Requests": "1",
         })
@@ -168,13 +166,16 @@ def write_country_movies_file(country: str, items):
     out_dir = os.path.join(base, "data", country)
     os.makedirs(out_dir, exist_ok=True)
     out_path = os.path.join(out_dir, "movies.json")
+    ordered = sorted(items, key=lambda item: item.get("rank") if isinstance(item, dict) and item.get("rank") is not None else float("inf"))
     with open(out_path, "w", encoding="utf-8") as fh:
-        json.dump(items, fh, indent=2, ensure_ascii=False)
+        json.dump(ordered, fh, indent=2, ensure_ascii=False)
 
 
 def scrape_movies(start_index: int = 0, end_index: int | None = None):
     metadata = load_metadata()
-    countries = metadata.get("countries", [])
+    countries = metadata.get("countries", {})
+    if not isinstance(countries, dict):
+        return {}
     services = metadata.get("services", [])
     service_aliases = list(iter_service_aliases(services))
     if not service_aliases:
@@ -198,20 +199,41 @@ def scrape_movies(start_index: int = 0, end_index: int | None = None):
 
     results = {}
     for country in countries:
-        lang = get_country_language(country)
+        lang = countries.get(country)
         print(f"country: {country}, language: {lang}")
-        country_movies = []
 
+        country_file_path = os.path.join(base, "data", country, "movies.json")
+        existing_country_movies = []
+        try:
+            with open(country_file_path, "r", encoding="utf-8") as fh:
+                existing_country_movies = json.load(fh)
+        except (FileNotFoundError, json.JSONDecodeError):
+            existing_country_movies = []
+
+        existing_by_rank = {
+            entry.get("rank"): entry
+            for entry in existing_country_movies
+            if isinstance(entry, dict) and entry.get("rank") is not None
+        }
+
+        country_movies = list(existing_country_movies)
         for movie in selected_movies:
             title = (movie or {}).get("title")
             if not title:
                 continue
+
+            rank = movie.get("rank")
+            existing = existing_by_rank.get(rank)
+            if isinstance(existing, dict) and existing.get("en_title") == title:
+                print(f"Movie: {title} - already up to date")
+                continue
+
             print(f"Movie: {title}", end=' ', flush=True)
             search_page = fetch_search_page(title, lang)
             if not search_page:
                 print("- no page")
                 continue
-            page_html = fetch_movie_page(search_page)
+            page_html = fetch_movie_page(search_page, lang=lang)
             if not page_html:
                 print("- no movie page found")
                 continue
@@ -227,18 +249,20 @@ def scrape_movies(start_index: int = 0, end_index: int | None = None):
                 if is_service_available(page_html, [long_name]):
                     available_services.append(short_name)
 
-            print("- ok")
-            # print(parsed_title)
-            # print(synopsis)
-            # print(available_services)
-
-            country_movies.append({
+            new_entry = {
                 "rank": movie.get("rank"),
                 "title": parsed_title,
+                "en_title": title,
                 "synopsis": synopsis,
                 "streams_on": available_services,
-            })
+            }
+            country_movies = [entry for entry in country_movies if entry.get("rank") != rank]
+            country_movies.append(new_entry)
+            existing_by_rank[rank] = new_entry
 
+            print("- ok")
+
+        country_movies.sort(key=lambda entry: entry.get("rank") or 0)
         results[country] = country_movies
         write_country_movies_file(country, country_movies)
 

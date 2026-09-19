@@ -224,10 +224,17 @@ body {
 }
 
 .list-title-group {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 0.75rem;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+
+.list-title-group .list-kicker,
+.list-title-group h1 {
+  display: inline-flex;
+  align-items: center;
 }
 
 .list-hero h1 {

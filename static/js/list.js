@@ -205,10 +205,10 @@ function renderMovies(items) {
     <div class="list-shell">
       <div class="hero-panel list-hero">
         <div class="list-top-row">
-          <div class="list-title-group">
-            <div class="list-kicker">Streaming catalogue</div>
+          <a href="./" class="list-title-group" aria-label="Go back to country selection" style="cursor: pointer; text-decoration: none; color: inherit;">
+            <span class="list-kicker">Streaming catalogue</span>
             <h1>${country.toUpperCase()}</h1>
-          </div>
+          </a>
           <div class="list-count">${visibleMovies.length} movies</div>
           <div class="list-meta">${selectedServices.size === 0 ? 'All movies' : `${selectedServices.size} service${selectedServices.size === 1 ? '' : 's'} selected`}</div>
         </div>
@@ -234,6 +234,19 @@ function renderMovies(items) {
       renderMovies(filteredMovies);
     });
   });
+
+  const titleGroup = document.querySelector('.list-title-group');
+  if (titleGroup && titleGroup.tagName !== 'A') {
+    titleGroup.addEventListener('click', () => {
+      window.location.href = './';
+    });
+    titleGroup.addEventListener('keydown', event => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        window.location.href = './';
+      }
+    });
+  }
 }
 
 const initialServices = readSelectedServicesFromUrl();
