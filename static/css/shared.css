@@ -299,15 +299,15 @@ body {
 
 .service-filter-btn {
   border: 1px solid rgba(148, 163, 184, 0.65);
-  background: rgba(255, 255, 255, 0.62);
-  color: rgba(31, 41, 55, 0.8);
+  background: rgba(148, 163, 184, 0.18);
+  color: rgba(15, 23, 42, 0.78);
   border-radius: 999px;
   padding: 0.55rem 1rem;
   font-weight: 700;
   letter-spacing: 0.03em;
   transition: all 0.18s ease;
   box-shadow: 0 6px 16px rgba(15, 23, 42, 0.04);
-  opacity: 0.7;
+  opacity: 0.8;
 }
 
 .service-filter-btn:hover {
@@ -333,60 +333,38 @@ body {
   text-transform: uppercase;
 }
 
-.service-netflix {
-  background: rgba(220, 53, 69, 0.18);
-  border-color: rgba(220, 53, 69, 0.6);
-}
-
-.service-netflix.active {
+.service-netflix.active,
+.service-netflix.service-badge {
   background: linear-gradient(135deg, #dc3545, #e85d6d);
   border-color: transparent;
 }
 
-.service-hbo {
-  background: rgba(13, 110, 253, 0.18);
-  border-color: rgba(13, 110, 253, 0.6);
-}
-
-.service-hbo.active {
-  background: linear-gradient(135deg, #0d6efd, #3b82f6);
+.service-hbo.active,
+.service-hbo.service-badge {
+  background: linear-gradient(135deg, #0f766e, #14b8a6);
   border-color: transparent;
+  color: #ecfeff;
 }
 
-.service-prime {
-  background: rgba(255, 193, 7, 0.2);
-  border-color: rgba(255, 193, 7, 0.75);
-  color: rgba(77, 58, 0, 0.8);
-}
-
-.service-prime.active {
+.service-prime.active,
+.service-prime.service-badge {
   background: linear-gradient(135deg, #f4b400, #facc15);
   border-color: transparent;
   color: #3f2c00;
 }
 
-.service-apple {
-  background: rgba(139, 92, 246, 0.18);
-  border-color: rgba(139, 92, 246, 0.6);
-  color: rgba(55, 35, 90, 0.85);
-}
-
-.service-apple.active {
+.service-apple.active,
+.service-apple.service-badge {
   background: linear-gradient(135deg, #8b5cf6, #a78bfa);
   border-color: transparent;
   color: #ffffff;
 }
 
-.service-disney {
-  background: rgba(37, 99, 235, 0.16);
-  border-color: rgba(37, 99, 235, 0.6);
-  color: rgba(19, 40, 94, 0.82);
-}
-
-.service-disney.active {
-  background: linear-gradient(135deg, #2563eb, #60a5fa);
+.service-disney.active,
+.service-disney.service-badge {
+  background: linear-gradient(135deg, #1d4ed8, #60a5fa);
   border-color: transparent;
-  color: #ffffff;
+  color: #eff6ff;
 }
 
 .poster-shell {
