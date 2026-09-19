@@ -20,12 +20,12 @@ function renderCountries(countries) {
 
   document.querySelectorAll('.country-card').forEach(card => {
     card.addEventListener('click', () => {
-      window.location.href = '/country.html?country=' + encodeURIComponent(card.dataset.country);
+      window.location.href = './list.html?country=' + encodeURIComponent(card.dataset.country);
     });
   });
 }
 
-fetch('/data/metadata.json')
+fetch('./data/metadata.json')
   .then(r => r.json())
   .then(meta => renderCountries(meta.countries || []))
   .catch(() => {
