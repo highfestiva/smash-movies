@@ -74,11 +74,23 @@ function renderServiceFilters() {
   const host = document.getElementById('service-filter-host');
   if (host) {
     host.innerHTML = `
-      <div class="service-filter-bar">
+      <div class="service-filter-bar list-service-host">
+        <span class="navbar-kicker">Services</span>
         ${controls}
       </div>
     `;
   }
+}
+
+function getFilteredMovies(movies) {
+  if (selectedServices.size === 0) {
+    return movies;
+  }
+
+  return movies.filter(movie => {
+    const movieServices = Object.keys(movie.services || {});
+    return movieServices.some(name => selectedServices.has(name));
+  });
 }
 
 function renderMovies(items) {
@@ -113,13 +125,27 @@ function renderMovies(items) {
 
   const countryHeader = document.getElementById('country-header');
   if (countryHeader) {
-    countryHeader.textContent = country.toUpperCase();
+    countryHeader.textContent = '';
   }
 
   const visibleMovies = items.length ? items : [];
   renderServiceFilters();
+  const movieGrid = visibleMovies.length ? `<div class="movie-grid row g-4">${cards}</div>` : '<div class="alert alert-light border">No movies match the selected services.</div>';
+
   app.innerHTML = `
-    ${visibleMovies.length ? `<div class="row">${cards}</div>` : '<div class="alert alert-light border">No movies match the selected services.</div>'}
+    <div class="list-shell">
+      <div class="hero-panel list-hero">
+        <div class="list-top-row">
+          <div class="list-title-group">
+            <div class="list-kicker">Streaming catalogue</div>
+            <h1>${country.toUpperCase()}</h1>
+          </div>
+          <div class="list-count">${visibleMovies.length} movies</div>
+          <div class="list-meta">${selectedServices.size === 0 ? 'All movies' : `${selectedServices.size} service${selectedServices.size === 1 ? '' : 's'} selected`}</div>
+        </div>
+      </div>
+      ${movieGrid}
+    </div>
   `;
 
   document.querySelectorAll('.service-filter-btn').forEach(button => {
@@ -135,13 +161,7 @@ function renderMovies(items) {
       button.classList.toggle('active', selectedServices.has(service));
       button.setAttribute('aria-pressed', String(selectedServices.has(service)));
 
-      const filteredMovies = selectedServices.size === 0
-        ? allMovies
-        : allMovies.filter(movie => {
-            const movieServices = Object.keys(movie.services || {});
-            return movieServices.some(name => selectedServices.has(name));
-          });
-
+      const filteredMovies = getFilteredMovies(allMovies);
       renderMovies(filteredMovies);
     });
   });
@@ -176,7 +196,10 @@ fetch('./data/metadata.json')
         .catch(() => {})
     );
 
-    Promise.all(promises).then(() => renderMovies(allMovies));
+    Promise.all(promises).then(() => {
+      const filteredMovies = getFilteredMovies(allMovies);
+      renderMovies(filteredMovies);
+    });
   })
   .catch(() => {
     app.innerHTML = '<div class="alert alert-danger">Could not load country data.</div>';
