@@ -5,6 +5,57 @@ let serviceLabels = {};
 const selectedServices = new Set();
 let allMovies = [];
 
+function getPreferredLanguages() {
+  const languages = Array.isArray(navigator.languages) && navigator.languages.length
+    ? navigator.languages
+    : [navigator.language];
+
+  return languages
+    .filter(Boolean)
+    .map(language => String(language).trim())
+    .filter(Boolean);
+}
+
+function normalizeLanguage(language) {
+  return String(language || '')
+    .trim()
+    .toLowerCase()
+    .replace('_', '-');
+}
+
+function languageMatches(language, candidate) {
+  const normalizedLanguage = normalizeLanguage(language);
+  const normalizedCandidate = normalizeLanguage(candidate);
+  if (!normalizedLanguage || !normalizedCandidate) {
+    return false;
+  }
+  // Allow sv-SE to match sv, and sv to match sv-SE.
+  const languageBase = normalizedLanguage.split('-')[0];
+  const candidateBase = normalizedCandidate.split('-')[0];
+  return languageBase === candidateBase;
+}
+
+function findLanguageCountry(preferredLanguages, countries) {
+  const entries = Object.entries(countries || {});
+  for (const language of preferredLanguages) {
+    const normalized = normalizeLanguage(language);
+    for (const [countryCode, countryLanguage] of entries) {
+      if (languageMatches(language, countryLanguage)) {
+        return {
+          type: 'country',
+          language,
+          country: countryCode,
+        };
+      }
+    }
+  }
+  return {
+    type: 'rotten',
+    language: 'en',
+    country: null,
+  };
+}
+
 function normalizeServiceMetadata(meta) {
   const rawServices = meta && meta.services;
   if (!rawServices) {
@@ -68,42 +119,6 @@ function getImageAssetUrl(imagePath) {
   return new URL(normalizedPath, window.location.href).toString();
 }
 
-function getPreferredMovieDetails(movie) {
-  const serviceEntries = serviceNames
-    .filter(service => movie.services && movie.services[service])
-    .map(service => movie.services[service]);
-
-  for (const serviceMovie of serviceEntries) {
-    if (serviceMovie.title || serviceMovie.synopsis) {
-      return {
-        title: serviceMovie.title || movie.title,
-        synopsis: serviceMovie.synopsis || movie.synopsis,
-      };
-    }
-  }
-
-  return {
-    title: movie.title,
-    synopsis: movie.synopsis,
-  };
-}
-
-function mergeMovieRecord(baseMovie, localMovie) {
-  const merged = {
-    ...(baseMovie || {}),
-    ...(localMovie || {}),
-  };
-
-  merged.title = localMovie?.title || baseMovie?.title || merged.title;
-  merged.synopsis = localMovie?.synopsis || baseMovie?.synopsis || merged.synopsis;
-  merged.image = localMovie?.image || baseMovie?.image || merged.image;
-  merged.year = localMovie?.year || baseMovie?.year || merged.year;
-  merged.rank = localMovie?.rank ?? baseMovie?.rank ?? merged.rank;
-  merged.streams_on = localMovie?.streams_on || baseMovie?.streams_on || [];
-
-  return merged;
-}
-
 function hydrateMovieServices(movie) {
   const services = {};
 
@@ -122,20 +137,23 @@ function hydrateMovieServices(movie) {
   };
 }
 
-function buildAllMovies(countryMovies, rottenMovies) {
-  const rottenByRank = new Map((rottenMovies || []).map(movie => [movie.rank, movie]));
-  const localByRank = new Map((countryMovies || []).map(movie => [movie.rank, movie]));
+function buildAllMovies(rottenMovies, currentCountryMovies, languageMovies) {
+  const currentCountryByRank = new Map((currentCountryMovies || []).map(movie => [movie.rank, movie]));
+  const languageByRank = new Map((languageMovies || []).map(movie => [movie.rank, movie]));
 
-  const merged = (rottenMovies || []).map(movie => {
-    const localMovie = localByRank.get(movie.rank);
-    return hydrateMovieServices(mergeMovieRecord(movie, localMovie));
+  return (rottenMovies || []).map(rottenMovie => {
+    const currentCountryMovie = currentCountryByRank.get(rottenMovie.rank);
+    const languageMovie = languageByRank.get(rottenMovie.rank);
+    const movie = {
+      ...rottenMovie,
+      localizedDetails: {
+        title: languageMovie?.title,
+        synopsis: languageMovie?.synopsis,
+      },
+      streams_on: currentCountryMovie.streams_on
+    };
+    return hydrateMovieServices(movie);
   });
-
-  const extraLocalMovies = (countryMovies || [])
-    .filter(movie => !rottenByRank.has(movie.rank))
-    .map(movie => hydrateMovieServices(mergeMovieRecord(null, movie)));
-
-  return [...merged, ...extraLocalMovies];
 }
 
 function renderServiceFilters() {
@@ -172,15 +190,18 @@ function getFilteredMovies(movies) {
   });
 }
 
-function renderMovies(items) {
-  const cards = items.map(movie => {
-    const preferred = getPreferredMovieDetails(movie);
-    const title = preferred.title || movie.title;
-    const synopsis = preferred.synopsis || movie.synopsis || 'No synopsis available.';
+function renderMovies(movies) {
+  const cards = movies.map(movie => {
+    const title = movie.localizedDetails?.title || movie.title;
+    const synopsis = movie.localizedDetails?.synopsis || movie.synopsis;
     const imageUrl = getImageAssetUrl(movie.image);
     const badges = (movie.services ? Object.keys(movie.services) : [])
       .filter(service => serviceNames.includes(service))
-      .map(service => `<span class="badge service-badge service-${service}">${serviceLabels[service] || service}</span>`);
+      .map(service =>
+        `<span class="badge service-badge service-${service}">
+          ${serviceLabels[service] || service}
+        </span>`
+      );
 
     return `
       <div class="col-md-4 mb-4">
@@ -207,7 +228,7 @@ function renderMovies(items) {
     countryHeader.textContent = '';
   }
 
-  const visibleMovies = items.length ? items : [];
+  const visibleMovies = movies.length ? movies : [];
   renderServiceFilters();
   const movieGrid = visibleMovies.length ? `<div class="movie-grid row g-4">${cards}</div>` : '<div class="alert alert-light border">No movies match the selected services.</div>';
 
@@ -259,26 +280,44 @@ function renderMovies(items) {
   }
 }
 
-const initialServices = readSelectedServicesFromUrl();
-if (initialServices.length) {
-  initialServices.forEach(service => selectedServices.add(service));
-}
-
 fetch('./data/metadata.json')
   .then(r => r.json())
   .then(meta => {
     normalizeServiceMetadata(meta);
 
+    const initialServices = readSelectedServicesFromUrl();
+    initialServices.forEach(service => selectedServices.add(service));
+    const countries = meta?.countries || {};
+    const preferredLanguages = getPreferredLanguages();
+    const languageSelection = findLanguageCountry(preferredLanguages, countries);
+
+    let languageDataPromise;
+    if (languageSelection?.type === 'rotten') {
+      languageDataPromise = fetch('./data/rotten_300.json')
+        .then(r => (r.ok ? r.json() : []));
+    } else if (languageSelection?.type === 'country') {
+      languageDataPromise = fetch(`./data/${languageSelection.country}/movies.json`)
+        .then(r => (r.ok ? r.json() : []));
+    } else {
+      languageDataPromise = fetch(`./data/${country}/movies.json`)
+        .then(r => (r.ok ? r.json() : []));
+    }
+
     return Promise.all([
-      fetch(`./data/${country}/movies.json`).then(r => (r.ok ? r.json() : [])),
-      fetch('./data/rotten_300.json').then(r => (r.ok ? r.json() : [])),
+      fetch('./data/rotten_300.json')
+        .then(r => (r.ok ? r.json() : [])),
+
+      fetch(`./data/${country}/movies.json`)
+        .then(r => (r.ok ? r.json() : [])),
+
+      languageDataPromise,
     ]);
   })
-  .then(([countryMovies, rottenMovies]) => {
-    allMovies = buildAllMovies(countryMovies, rottenMovies);
+  .then(([rottenMovies, countryMovies, languageMovies]) => {
+    allMovies = buildAllMovies(rottenMovies, countryMovies, languageMovies);
     const filteredMovies = getFilteredMovies(allMovies);
     renderMovies(filteredMovies);
   })
   .catch(() => {
-    app.innerHTML = '<div class="alert alert-danger">Could not load country data.</div>';
+    app.innerHTML = '<div class="alert alert-danger">Could not load movie data.</div>';
   });

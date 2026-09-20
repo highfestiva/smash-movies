@@ -122,7 +122,7 @@ class CountriesUpdaterTests(unittest.TestCase):
         self.assertNotIn("please complete the security check", plain_text)
         self.assertNotIn("why have i been blocked", plain_text)
 
-        movie_page = update_countries.fetch_movie_page(search_page)
+        movie_page = update_countries.fetch_movie_page(search_page, year=1966)
         self.assertIsNotNone(movie_page)
         self.assertEqual(update_countries.extract_movie_title(movie_page), "Slaget om Alger")
 
@@ -130,7 +130,7 @@ class CountriesUpdaterTests(unittest.TestCase):
         search_page = update_countries.fetch_search_page("Fanny and Alexander", "sv-SE")
         self.assertIsNotNone(search_page)
 
-        movie_page = update_countries.fetch_movie_page(search_page)
+        movie_page = update_countries.fetch_movie_page(search_page, year=1982)
         self.assertIsNotNone(movie_page)
 
         synopsis = update_countries.extract_movie_synopsis(movie_page)
@@ -141,7 +141,7 @@ class CountriesUpdaterTests(unittest.TestCase):
         search_page = update_countries.fetch_search_page("Godzilla Minus One", "sv-SE")
         self.assertIsNotNone(search_page)
 
-        movie_page = update_countries.fetch_movie_page(search_page)
+        movie_page = update_countries.fetch_movie_page(search_page, year=2023)
         self.assertIsNotNone(movie_page)
 
         self.assertTrue(update_countries.is_service_available(movie_page, ["netflix"]))

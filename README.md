@@ -1,6 +1,7 @@
 # Smash Movies
 
-A small project for tracking good movies for streaming availability in different countries. You can statically generate and service this anywhere you please.
+A small project for tracking good movies for streaming availability in different countries. You can statically generate
+and service this anywhere you please.
 
 ## Project overview
 
@@ -16,32 +17,27 @@ A small project for tracking good movies for streaming availability in different
 
 ![Smash Movies screenshot](doc/screenshot.jpg)
 
-## Update the Rotten Tomatoes list
-
-From the project root, run:
+## Update the whole data set
 
 ```bash
+# fetch rotten tomatoes list
 python scripts/update_rotten_300.py
-```
 
-This downloads or refreshes the Rotten Tomatoes movie list and writes the data into `data/rotten_300.json`.
+# fetch images missing from rotten tomatoes
+python scripts/download_missing_imgs.py
 
-## Update the streaming list
+# update national movies
+python scripts/update_countries.py
 
-Before scraping, make sure the metadata file is configured with the countries and service names you want to process:
-
-```bash
+# improve service coverage (tmdb is not reliable)
 python scripts/update_countries.py
 ```
 
 This will:
 
-- load the existing per-country movie file
-- skip entries already present for the same rank and `en_title`
-- fetch new or updated entries only
-- write sorted results back into `data/<country>/movies.json`
-
-The default metadata configuration is stored in `data/metadata.json`.
+- fill up `data/rotten_300.json`
+- download images to `data/img/`
+- create per-country movie file in `data/<country>/movies.json`
 
 ## Run the unit tests
 
@@ -53,10 +49,23 @@ python -m unittest discover -s tests -v
 
 ## Test locally with a simple web server
 
-To preview the static pages locally:
-
 ```bash
 python -m http.server 8000
 ```
 
 Then open [http://localhost:8000/](http://localhost:8000/).
+
+## Web implementation
+
+The JavaScript code will download the complete (English) movie list,
+the national movie list and the metadata file.
+
+
+## AI
+
+This was a free CoPilot experiment. In a few ways, it really made me faster. Like when pivoting to a new architecture
+from having a Python backend server to doing everything in the JavaScript frontend. Or throwing together a unit or
+integration test. But most of the time, it was really a sink with a lot of boilerplate.
+
+I actually didn't notice much improvement from 6 months ago, which is a relief! Perhaps we're at the top of the S-curve
+this time around. :)

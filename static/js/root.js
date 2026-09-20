@@ -1,10 +1,23 @@
 const app = document.getElementById('app');
 
 const countryDetails = {
-  se: { label: 'Sweden', flag: '🇸🇪', gradient: 'linear-gradient(135deg, #0f766e 0%, #14b8a6 35%, #34d399 100%)' },
-  dk: { label: 'Denmark', flag: '🇩🇰', gradient: 'linear-gradient(135deg, #1d4ed8 0%, #60a5fa 35%, #93c5fd 100%)' },
-  no: { label: 'Norway', flag: '🇳🇴', gradient: 'linear-gradient(135deg, #7c3aed 0%, #a78bfa 40%, #c4b5fd 100%)' },
-  fi: { label: 'Finland', flag: '🇫🇮', gradient: 'linear-gradient(135deg, #2563eb 0%, #38bdf8 40%, #7dd3fc 100%)' },
+  se: { label: 'Sverige', flag: '🇸🇪', gradient: 'linear-gradient(135deg, #006aa7 0%, #fecc00 50%, #006aa7 100%)' },
+  dk: { label: 'Danmark', flag: '🇩🇰', gradient: 'linear-gradient(135deg, #c8102e 0%, #ffffff 50%, #c8102e 100%)' },
+  no: { label: 'Norge', flag: '🇳🇴', gradient: 'linear-gradient(135deg, #ba0c2f 0%, #ffffff 50%, #00205b 100%)' },
+  fi: { label: 'Suomi', flag: '🇫🇮', gradient: 'linear-gradient(135deg, #ffffff 0%, #003580 50%, #ffffff 100%)' },
+  is: { label: 'Ísland', flag: '🇮🇸', gradient: 'linear-gradient(135deg, #02529c 0%, #ffffff 50%, #dc1e35 100%)' },
+  us: { label: 'United States', flag: '🇺🇸', gradient: 'linear-gradient(135deg, #b22234 0%, #ffffff 50%, #3c3b6e 100%)' },
+  ca: { label: 'Canada', flag: '🇨🇦', gradient: 'linear-gradient(135deg, #ff0000 0%, #ffffff 50%, #ff0000 100%)' },
+  gb: { label: 'United Kingdom', flag: '🇬🇧', gradient: 'linear-gradient(135deg, #012169 0%, #ffffff 50%, #c8102e 100%)' },
+  au: { label: 'Australia', flag: '🇦🇺', gradient: 'linear-gradient(135deg, #00008b 0%, #ffffff 50%, #ff0000 100%)' },
+  de: { label: 'Deutschland', flag: '🇩🇪', gradient: 'linear-gradient(135deg, #000000 0%, #dd0000 50%, #ffce00 100%)' },
+  fr: { label: 'France', flag: '🇫🇷', gradient: 'linear-gradient(135deg, #0055a4 0%, #ffffff 50%, #ef4135 100%)' },
+  nl: { label: 'Nederland', flag: '🇳🇱', gradient: 'linear-gradient(135deg, #ae1c28 0%, #ffffff 50%, #21468b 100%)' },
+  ie: { label: 'Éire', flag: '🇮🇪', gradient: 'linear-gradient(135deg, #169b62 0%, #ffffff 50%, #ff883e 100%)' },
+  nz: { label: 'New Zealand', flag: '🇳🇿', gradient: 'linear-gradient(135deg, #00247d 0%, #ffffff 50%, #cc142b 100%)' },
+  ch: { label: 'Schweiz', flag: '🇨🇭', gradient: 'linear-gradient(135deg, #ff0000 0%, #ffffff 50%, #ff0000 100%)' },
+  at: { label: 'Österreich', flag: '🇦🇹', gradient: 'linear-gradient(135deg, #ed2939 0%, #ffffff 50%, #ed2939 100%)' },
+  be: { label: 'België', flag: '🇧🇪', gradient: 'linear-gradient(135deg, #000000 0%, #fdda24 50%, #ef3340 100%)' },
 };
 
 function renderCountries(countries) {

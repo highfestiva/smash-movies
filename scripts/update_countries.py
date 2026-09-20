@@ -127,7 +127,7 @@ def fetch_search_page(title: str, lang: str, session: requests.Session | None = 
     return resp.text
 
 
-def fetch_movie_page(search_page_html: str, lang: str = "en-US", session: requests.Session | None = None) -> str | None:
+def fetch_movie_page(search_page_html: str, year: int, lang: str = "en-US", session: requests.Session | None = None) -> str | None:
     if not search_page_html:
         return None
 
@@ -143,6 +143,8 @@ def fetch_movie_page(search_page_html: str, lang: str = "en-US", session: reques
             continue
         candidates.append(href)
 
+    year_window = 1
+
     for href in candidates:
         full_url = href if href.startswith("http") else f"https://www.themoviedb.org{href}"
         sess = session or requests.Session()
@@ -155,9 +157,17 @@ def fetch_movie_page(search_page_html: str, lang: str = "en-US", session: reques
         try:
             resp = sess.get(full_url, timeout=30)
             resp.raise_for_status()
-            return resp.text
         except requests.RequestException:
             continue
+
+        page_year = None
+        match = re.search(r"\((\d{4})\)", resp.text)
+        if match:
+            page_year = int(match.group(1))
+        if page_year is not None and abs(page_year - year) <= year_window:
+            return resp.text
+        if page_year is None:
+            return resp.text
 
     return None
 
@@ -218,7 +228,7 @@ def scrape_movies(start_index: int = 0, end_index: int | None = None):
 
         country_movies = list(existing_country_movies)
         for movie in selected_movies:
-            title = (movie or {}).get("title")
+            title = movie["title"]
             if not title:
                 continue
 
@@ -233,7 +243,7 @@ def scrape_movies(start_index: int = 0, end_index: int | None = None):
             if not search_page:
                 print("- no page")
                 continue
-            page_html = fetch_movie_page(search_page, lang=lang)
+            page_html = fetch_movie_page(search_page, year=movie["year"], lang=lang)
             if not page_html:
                 print("- no movie page found")
                 continue
